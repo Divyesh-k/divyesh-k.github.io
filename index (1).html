@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Divyesh Kakadiya — Rust Backend Engineer</title>
+<style>
+/* ============================================================
+   TOKENS — edit colors/fonts here, everything else inherits
+   ============================================================ */
+:root{
+  --bg: #0a0e0f;
+  --bg-raised: #11171a;
+  --bg-card: #0f1517;
+  --line: #1e2a2e;
+  --line-bright: #2a3a40;
+  --amber: #ff7b1c;
+  --amber-dim: #ff7b1c66;
+  --teal: #2dd4bf;
+  --text: #e8edee;
+  --text-dim: #8fa1a6;
+  --text-faint: #566569;
+  --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  line-height:1.6;
+  overflow-x:hidden;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; scroll-behavior:auto !important;}
+}
+
+a{color:inherit; text-decoration:none;}
+::selection{background:var(--amber); color:#0a0e0f;}
+
+/* focus visibility */
+a:focus-visible, button:focus-visible, summary:focus-visible{
+  outline:2px solid var(--amber);
+  outline-offset:3px;
+}
+
+/* ============================================================
+   BACKGROUND NETWORK CANVAS — drifting node graph
+   ============================================================ */
+#netbg{
+  position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.35;
+}
+
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+.wrap{
+  max-width:980px;
+  margin:0 auto;
+  padding:0 28px;
+  position:relative;
+  z-index:1;
+}
+section{padding:96px 0; border-bottom:1px solid var(--line);}
+section:last-of-type{border-bottom:none;}
+
+.eyebrow{
+  font-family:var(--mono);
+  font-size:12px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--amber);
+  display:flex; align-items:center; gap:10px;
+  margin-bottom:22px;
+}
+.eyebrow::before{
+  content:"";
+  width:18px; height:1px;
+  background:var(--amber);
+  display:inline-block;
+}
+
+h2{
+  font-family:var(--mono);
+  font-size:clamp(22px,3vw,30px);
+  font-weight:600;
+  letter-spacing:-0.01em;
+  margin-bottom:40px;
+  color:var(--text);
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+nav{
+  position:fixed; top:0; left:0; right:0; z-index:10;
+  background:rgba(10,14,15,0.85);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+nav .wrap{
+  display:flex; align-items:center; justify-content:space-between;
+  padding-top:16px; padding-bottom:16px;
+}
+.nav-mark{
+  font-family:var(--mono); font-size:13px; color:var(--text-dim);
+}
+.nav-mark .px{color:var(--amber);}
+.nav-links{display:flex; gap:26px; font-family:var(--mono); font-size:12.5px; color:var(--text-dim);}
+.nav-links a{transition:color .2s;}
+.nav-links a:hover{color:var(--amber);}
+@media (max-width:640px){ .nav-links{display:none;} }
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{
+  min-height:92vh;
+  display:flex; flex-direction:column; justify-content:center;
+  padding-top:96px;
+  border-bottom:1px solid var(--line);
+}
+.hero-kicker{
+  font-family:var(--mono); font-size:13px; color:var(--text-faint);
+  margin-bottom:18px; letter-spacing:0.05em;
+}
+.hero-kicker .dot{
+  display:inline-block; width:7px; height:7px; border-radius:50%;
+  background:var(--teal); margin-right:8px;
+  box-shadow:0 0 8px var(--teal);
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.35;}}
+
+h1{
+  font-family:var(--mono);
+  font-size:clamp(34px,6vw,62px);
+  font-weight:700;
+  letter-spacing:-0.02em;
+  line-height:1.05;
+  color:var(--text);
+}
+h1 .accent{color:var(--amber);}
+
+.hero-role{
+  font-size:clamp(16px,2vw,19px);
+  color:var(--text-dim);
+  margin-top:18px;
+  max-width:540px;
+}
+.hero-role strong{color:var(--text); font-weight:600;}
+
+.hero-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:48px;
+  margin-top:56px; align-items:start;
+}
+@media (max-width:760px){ .hero-grid{grid-template-columns:1fr;} }
+
+/* terminal */
+.terminal{
+  background:var(--bg-raised);
+  border:1px solid var(--line-bright);
+  border-radius:8px;
+  overflow:hidden;
+  font-family:var(--mono);
+  font-size:12.5px;
+  box-shadow:0 20px 60px -20px rgba(0,0,0,0.6);
+}
+.terminal-bar{
+  display:flex; align-items:center; gap:7px;
+  padding:10px 14px;
+  background:#0d1315;
+  border-bottom:1px solid var(--line);
+}
+.terminal-dot{width:9px; height:9px; border-radius:50%; background:#2a3338;}
+.terminal-label{
+  margin-left:8px; color:var(--text-faint); font-size:11px;
+}
+.terminal-body{
+  padding:18px 18px 22px;
+  min-height:188px;
+  color:#c4d0d2;
+  white-space:pre-wrap;
+}
+.tk-kw{color:var(--amber);}
+.tk-type{color:var(--teal);}
+.tk-fn{color:#7dd3fc;}
+.tk-str{color:#a3e635;}
+.tk-com{color:var(--text-faint);}
+.cursor{
+  display:inline-block; width:7px; height:14px;
+  background:var(--amber); margin-left:1px;
+  animation:blink 1s step-end infinite;
+  vertical-align:-2px;
+}
+@keyframes blink{0%,100%{opacity:1;} 50%{opacity:0;}}
+
+.hero-stats{display:flex; flex-direction:column; gap:0;}
+.stat-row{
+  display:flex; justify-content:space-between; align-items:baseline;
+  padding:14px 0;
+  border-bottom:1px solid var(--line);
+  font-family:var(--mono);
+}
+.stat-row:first-child{padding-top:0;}
+.stat-label{font-size:12px; color:var(--text-faint); letter-spacing:0.04em; text-transform:uppercase;}
+.stat-value{font-size:15px; color:var(--text); font-weight:600;}
+.stat-value .unit{color:var(--amber); font-weight:400; font-size:12px; margin-left:3px;}
+
+.hero-cta{display:flex; gap:14px; margin-top:32px; flex-wrap:wrap;}
+.btn{
+  font-family:var(--mono); font-size:13px;
+  padding:11px 20px; border-radius:6px;
+  border:1px solid var(--line-bright);
+  transition:border-color .2s, background .2s, transform .15s;
+  display:inline-flex; align-items:center; gap:8px;
+}
+.btn-primary{
+  background:var(--amber); color:#1a0e02; border-color:var(--amber); font-weight:600;
+}
+.btn-primary:hover{transform:translateY(-1px); box-shadow:0 8px 24px -8px var(--amber-dim);}
+.btn-ghost{color:var(--text-dim);}
+.btn-ghost:hover{border-color:var(--amber); color:var(--amber);}
+
+/* ============================================================
+   ABOUT — system description
+   ============================================================ */
+.about-body{max-width:680px; color:var(--text-dim); font-size:15.5px;}
+.about-body p{margin-bottom:18px;}
+.about-body .hl{color:var(--text); font-weight:600;}
+.about-flags{
+  margin-top:32px; font-family:var(--mono); font-size:12.5px;
+  background:var(--bg-raised); border:1px solid var(--line);
+  border-radius:8px; padding:18px 20px;
+  color:var(--text-dim);
+}
+.about-flags .flag{color:var(--amber);}
+.about-flags .val{color:var(--teal);}
+.about-flags div{padding:3px 0;}
+
+/* ============================================================
+   EXPERIENCE — release log timeline
+   ============================================================ */
+.timeline{position:relative; padding-left:28px;}
+.timeline::before{
+  content:""; position:absolute; left:5px; top:6px; bottom:6px;
+  width:1px; background:linear-gradient(var(--amber), var(--line) 90%);
+}
+.release{position:relative; margin-bottom:52px;}
+.release:last-child{margin-bottom:0;}
+.release::before{
+  content:""; position:absolute; left:-28px; top:5px;
+  width:11px; height:11px; border-radius:50%;
+  background:var(--bg); border:2px solid var(--amber);
+}
+.release-head{
+  display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+  font-family:var(--mono); margin-bottom:6px;
+}
+.release-tag{color:var(--amber); font-weight:700; font-size:14px;}
+.release-date{color:var(--text-faint); font-size:12px;}
+.release-title{font-size:17px; font-weight:600; color:var(--text); margin-bottom:2px;}
+.release-org{color:var(--text-dim); font-size:13.5px; margin-bottom:14px;}
+.release ul{list-style:none; display:flex; flex-direction:column; gap:9px;}
+.release li{
+  font-size:14.5px; color:var(--text-dim); padding-left:18px; position:relative;
+}
+.release li::before{
+  content:"+"; position:absolute; left:0; color:var(--teal); font-family:var(--mono); font-weight:700;
+}
+
+/* ============================================================
+   PROJECTS
+   ============================================================ */
+.proj-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+@media (max-width:760px){ .proj-grid{grid-template-columns:1fr;} }
+
+.proj-card{
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:24px 24px 8px;
+  transition:border-color .2s;
+}
+.proj-card:hover{border-color:var(--line-bright);}
+.proj-head{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px;}
+.proj-name{font-family:var(--mono); font-size:15.5px; font-weight:700; color:var(--text);}
+.proj-id{font-family:var(--mono); font-size:11px; color:var(--text-faint);}
+.proj-summary{font-size:14px; color:var(--text-dim); margin-bottom:16px;}
+.pill-row{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px;}
+.pill{
+  font-family:var(--mono); font-size:10.5px; color:var(--teal);
+  border:1px solid #2dd4bf3a; background:#2dd4bf0d;
+  padding:3px 9px; border-radius:99px;
+}
+.proj-card details{border-top:1px dashed var(--line); padding:14px 0 18px;}
+.proj-card summary{
+  cursor:pointer; font-family:var(--mono); font-size:11.5px; color:var(--amber);
+  list-style:none; display:flex; align-items:center; gap:6px;
+  user-select:none;
+}
+.proj-card summary::-webkit-details-marker{display:none;}
+.proj-card summary::before{content:"▸"; transition:transform .2s;}
+.proj-card details[open] summary::before{transform:rotate(90deg);}
+.flow{
+  margin-top:14px; font-family:var(--mono); font-size:11.5px; color:var(--text-dim);
+  background:var(--bg-raised); border:1px solid var(--line); border-radius:6px;
+  padding:14px; line-height:1.9; overflow-x:auto; white-space:pre;
+}
+.flow .node{color:var(--amber);}
+.flow .arrow{color:var(--text-faint);}
+
+/* ============================================================
+   WRITING — changelog / logs feed
+   ============================================================ */
+.logfeed{
+  font-family:var(--mono); font-size:13px;
+  background:var(--bg-raised); border:1px solid var(--line); border-radius:8px;
+  overflow:hidden;
+}
+.log-line{
+  display:flex; gap:14px; padding:13px 18px;
+  border-bottom:1px solid var(--line);
+  color:var(--text-dim);
+  transition:background .15s;
+}
+.log-line:last-child{border-bottom:none;}
+.log-line:hover{background:#ffffff05;}
+.log-tag{color:var(--teal); flex-shrink:0; width:62px;}
+.log-msg{color:var(--text-dim); flex:1;}
+.log-line a.log-msg{color:var(--text-dim);}
+.log-line a:hover .log-msg, .log-line a:hover{color:var(--amber);}
+.log-meta{color:var(--text-faint); flex-shrink:0; font-size:11.5px;}
+.writing-note{
+  margin-top:16px; font-size:12.5px; color:var(--text-faint); font-family:var(--mono);
+}
+
+/* ============================================================
+   SKILLS — stacked dependency bars
+   ============================================================ */
+.skills-grid{display:grid; grid-template-columns:1fr 1fr; gap:40px 56px;}
+@media (max-width:760px){ .skills-grid{grid-template-columns:1fr;} }
+.skill-group h3{
+  font-family:var(--mono); font-size:12px; color:var(--amber);
+  text-transform:uppercase; letter-spacing:0.08em; margin-bottom:16px;
+}
+.skill-bar-row{margin-bottom:13px;}
+.skill-bar-label{
+  display:flex; justify-content:space-between;
+  font-size:13px; color:var(--text-dim); margin-bottom:5px;
+  font-family:var(--mono);
+}
+.skill-bar-label span:last-child{color:var(--text-faint); font-size:11px;}
+.skill-bar-track{height:5px; background:var(--line); border-radius:3px; overflow:hidden;}
+.skill-bar-fill{height:100%; background:linear-gradient(90deg, var(--amber), var(--teal)); border-radius:3px;}
+
+/* ============================================================
+   CONTACT — config block
+   ============================================================ */
+.config-block{
+  font-family:var(--mono); font-size:14px;
+  background:var(--bg-raised); border:1px solid var(--line-bright); border-radius:10px;
+  padding:30px 32px; max-width:560px;
+  box-shadow:0 30px 70px -30px rgba(0,0,0,0.7);
+}
+.config-line{padding:4px 0; color:var(--text-dim);}
+.config-key{color:var(--teal);}
+.config-eq{color:var(--text-faint); margin:0 6px;}
+.config-val{color:var(--text);}
+.config-val a{color:var(--amber); border-bottom:1px solid var(--amber-dim);}
+.config-val a:hover{border-bottom-color:var(--amber);}
+.config-comment{color:var(--text-faint);}
+
+footer{
+  text-align:center; padding:36px 0 50px;
+  font-family:var(--mono); font-size:11.5px; color:var(--text-faint);
+}
+</style>
+</head>
+<body>
+
+<canvas id="netbg"></canvas>
+
+<nav>
+  <div class="wrap">
+    <div class="nav-mark">divyesh<span class="px">::</span>kakadiya</div>
+    <div class="nav-links">
+      <a href="#about">about</a>
+      <a href="#experience">experience</a>
+      <a href="#projects">projects</a>
+      <a href="#writing">writing</a>
+      <a href="#skills">skills</a>
+      <a href="#contact">contact</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ======================= HERO ======================= -->
+<header class="hero wrap">
+  <div class="hero-kicker"><span class="dot"></span>status: open to new infrastructure problems</div>
+  <h1>Divyesh Kakadiya<br><span class="accent">// Rust Backend Engineer</span></h1>
+  <p class="hero-role">Building <strong>fault-tolerant distributed systems</strong> at scale — async Rust, gRPC streaming, and the unglamorous infrastructure that keeps services talking under load.</p>
+
+  <div class="hero-grid">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot"></div><div class="terminal-dot"></div><div class="terminal-dot"></div>
+        <div class="terminal-label">replication_service.rs</div>
+      </div>
+      <div class="terminal-body" id="typer"></div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat-row"><span class="stat-label">Experience</span><span class="stat-value">2.5<span class="unit">yrs</span></span></div>
+      <div class="stat-row"><span class="stat-label">Uptime maintained</span><span class="stat-value">99.9<span class="unit">%</span></span></div>
+      <div class="stat-row"><span class="stat-label">Replication throughput</span><span class="stat-value">7000<span class="unit">rec/s</span></span></div>
+      <div class="stat-row"><span class="stat-label">Stream latency</span><span class="stat-value">&lt;50<span class="unit">ms</span></span></div>
+      <div class="stat-row"><span class="stat-label">Concurrent services</span><span class="stat-value">100<span class="unit">+</span></span></div>
+    </div>
+  </div>
+
+  <div class="hero-cta">
+    <a class="btn btn-primary" href="https://github.com/Divyesh-k" target="_blank" rel="noopener">view github →</a>
+    <a class="btn btn-ghost" href="#contact">get in touch</a>
+  </div>
+</header>
+
+<!-- ======================= ABOUT ======================= -->
+<section id="about">
+  <div class="wrap">
+    <div class="eyebrow">about</div>
+    <h2>system description</h2>
+    <div class="about-body">
+      <p>I work on the layer most people never see: the services that move data between clusters, route calls to the right agent, and keep retrying quietly when the network doesn't cooperate. <span class="hl">2.5+ years</span> writing async Rust on Tokio and Axum, with Go, Python and Node.js as supporting tools depending on what the system needs.</p>
+      <p>Most of my work lives in distributed data infrastructure — adapters over TiKV, Couchbase, Kafka, Elasticsearch and MinIO; replication pipelines that move records cluster-to-cluster with strong consistency; and event-driven services that have to stay correct even when something downstream fails.</p>
+    </div>
+    <div class="about-flags">
+      <div><span class="flag">--role</span><span class="config-eq">=</span><span class="val">"backend, distributed systems"</span></div>
+      <div><span class="flag">--stack</span><span class="config-eq">=</span><span class="val">rust, tokio, axum, go, grpc</span></div>
+      <div><span class="flag">--focus</span><span class="config-eq">=</span><span class="val">replication, concurrency, fault-tolerance</span></div>
+      <div><span class="flag">--based-in</span><span class="config-eq">=</span><span class="val">"Ahmedabad, India"</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= EXPERIENCE ======================= -->
+<section id="experience">
+  <div class="wrap">
+    <div class="eyebrow">experience</div>
+    <h2>release log</h2>
+    <div class="timeline">
+
+      <div class="release">
+        <div class="release-head">
+          <span class="release-tag">v2.0</span>
+          <span class="release-date">June 2025 — present</span>
+        </div>
+        <div class="release-title">Software Engineer</div>
+        <div class="release-org">Inventyv Software Pvt. Ltd. · Ahmedabad, India</div>
+        <ul>
+          <li>Leading backend development in Rust and Go, architecting event-driven distributed systems across 100+ concurrent services at 99.9% uptime</li>
+          <li>Built a Task Assigner System with intelligent IVR routing and real-time agent assignment using Rust, Kafka, WebSockets and the Plivo SDK</li>
+          <li>Optimized the Data Replication Service for 60–70% faster cluster-to-cluster transfers via gRPC streaming, sustaining 5000+ records/sec at sub-50ms latency</li>
+          <li>Integrated Coraza (ModSecurity) as a Rust/WASM middleware, blocking 500+ malicious requests daily</li>
+          <li>Migrated data-processing pipelines to Polars, a 3–5x performance gain, paired with Python agents for automated comparisons</li>
+          <li>Extended the internal datalayer library with adapters for TiKV, Couchbase, Kafka, Elasticsearch and MinIO, cutting infra setup time by 40%</li>
+        </ul>
+      </div>
+
+      <div class="release">
+        <div class="release-head">
+          <span class="release-tag">v1.0</span>
+          <span class="release-date">Dec 2023 — June 2025</span>
+        </div>
+        <div class="release-title">Junior Software Engineer</div>
+        <div class="release-org">Inventyv Software Pvt. Ltd. · Ahmedabad, India</div>
+        <ul>
+          <li>Core contributor to the Inventyv DataLayer library — a unified Rust + Node.js access layer for distributed databases and storage</li>
+          <li>Built Rust-based infrastructure services: a daily backup service and a gRPC-based replication service for cluster sync</li>
+          <li>Designed async pipelines with Tokio and Axum implementing fault tolerance, retries with exponential backoff, and idempotency</li>
+          <li>Implemented Kafka integrations for reliable async communication between microservices</li>
+          <li>Developed Python tooling for AI-based comparisons and internal platform automation</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ======================= PROJECTS ======================= -->
+<section id="projects">
+  <div class="wrap">
+    <div class="eyebrow">key projects</div>
+    <h2>architecture tiles</h2>
+    <div class="proj-grid">
+
+      <div class="proj-card">
+        <div class="proj-head">
+          <span class="proj-name">task_assigner_system</span>
+          <span class="proj-id">#001</span>
+        </div>
+        <div class="proj-summary">Event-driven phone system coordinating intelligent call routing and real-time agent assignment with high accuracy.</div>
+        <div class="pill-row">
+          <span class="pill">rust</span><span class="pill">kafka</span><span class="pill">tokio</span><span class="pill">websockets</span><span class="pill">plivo sdk</span>
+        </div>
+        <details>
+          <summary>view flow</summary>
+          <div class="flow"><span class="node">[ PBX ]</span> <span class="arrow">──event──&gt;</span> <span class="node">[ Decision Maker ]</span>
+   <span class="arrow">│</span>
+   <span class="arrow">└──route──&gt;</span> <span class="node">[ UCS / Agent ]</span>
+   <span class="arrow">└──ws──&gt;</span> <span class="node">[ Browser Client ]</span></div>
+        </details>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-head">
+          <span class="proj-name">inventyv_datalayer_lib</span>
+          <span class="proj-id">#002</span>
+        </div>
+        <div class="proj-summary">Unified Rust + Node.js data-access platform with adapters across five storage systems, used org-wide.</div>
+        <div class="pill-row">
+          <span class="pill">rust</span><span class="pill">node.js</span><span class="pill">tikv</span><span class="pill">couchbase</span><span class="pill">grpc</span>
+        </div>
+        <details>
+          <summary>view flow</summary>
+          <div class="flow"><span class="node">[ App ]</span> <span class="arrow">──&gt;</span> <span class="node">[ DataLayer Core ]</span>
+   <span class="arrow">├──&gt;</span> <span class="node">[ TiKV ]</span>
+   <span class="arrow">├──&gt;</span> <span class="node">[ Couchbase ]</span>
+   <span class="arrow">├──&gt;</span> <span class="node">[ Kafka ]</span>
+   <span class="arrow">└──&gt;</span> <span class="node">[ MinIO / ES ]</span></div>
+        </details>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-head">
+          <span class="proj-name">data_replication_service</span>
+          <span class="proj-id">#003</span>
+        </div>
+        <div class="proj-summary">High-throughput cluster-to-cluster sync via gRPC bidirectional streaming with strong consistency guarantees.</div>
+        <div class="pill-row">
+          <span class="pill">rust</span><span class="pill">grpc streaming</span><span class="pill">tikv</span><span class="pill">tokio</span><span class="pill">docker</span>
+        </div>
+        <details>
+          <summary>view flow</summary>
+          <div class="flow"><span class="node">[ Cluster A ]</span> <span class="arrow">══stream══&gt;</span> <span class="node">[ Replicator ]</span>
+   <span class="arrow">══retry/backoff══&gt;</span> <span class="node">[ Cluster B ]</span>
+   <span class="arrow">(7000+ rec/s, &lt;50ms, idempotent)</span></div>
+        </details>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-head">
+          <span class="proj-name">waf_middleware</span>
+          <span class="proj-id">#004</span>
+        </div>
+        <div class="proj-summary">Coraza (ModSecurity) integrated as Rust/WASM middleware, hardening request handling across microservices.</div>
+        <div class="pill-row">
+          <span class="pill">rust</span><span class="pill">wasm</span><span class="pill">coraza</span><span class="pill">microservices</span>
+        </div>
+        <details>
+          <summary>view flow</summary>
+          <div class="flow"><span class="node">[ Request ]</span> <span class="arrow">──&gt;</span> <span class="node">[ WASM/Coraza ]</span>
+   <span class="arrow">├──block──&gt;</span> <span class="node">[ 403 ]</span>
+   <span class="arrow">└──pass──&gt;</span> <span class="node">[ Service ]</span></div>
+        </details>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ======================= WRITING ======================= -->
+<section id="writing">
+  <div class="wrap">
+    <div class="eyebrow">writing</div>
+    <h2>logs</h2>
+    <div class="logfeed" id="logfeed">
+      <a class="log-line" href="https://github.com/Divyesh-k?tab=repositories" target="_blank" rel="noopener">
+        <span class="log-tag">[rust]</span><span class="log-msg">browse repositories and write-ups on github →</span>
+      </a>
+      <a class="log-line" href="https://github.com/Divyesh-k" target="_blank" rel="noopener">
+        <span class="log-tag">[infra]</span><span class="log-msg">replication, concurrency and async-Rust notes, indexed on the profile</span>
+      </a>
+      <a class="log-line" href="https://github.com/Divyesh-k" target="_blank" rel="noopener">
+        <span class="log-tag">[open]</span><span class="log-msg">full article archive lives at github.com/Divyesh-k</span>
+      </a>
+    </div>
+    <div class="writing-note">// replace this feed with real article titles + dates once published — see comment in source</div>
+  </div>
+</section>
+
+<!-- ======================= SKILLS ======================= -->
+<section id="skills">
+  <div class="wrap">
+    <div class="eyebrow">skills</div>
+    <h2>dependency graph</h2>
+    <div class="skills-grid">
+
+      <div class="skill-group">
+        <h3>Languages</h3>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Rust</span><span>primary</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:95%"></div></div>
+        </div>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Go</span><span>working</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:65%"></div></div>
+        </div>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Python</span><span>tooling</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:60%"></div></div>
+        </div>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Node.js</span><span>support</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:55%"></div></div>
+        </div>
+      </div>
+
+      <div class="skill-group">
+        <h3>Distributed Systems</h3>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Async Rust / Tokio</span><span>core</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:92%"></div></div>
+        </div>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>gRPC streaming</span><span>core</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:88%"></div></div>
+        </div>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Axum</span><span>core</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:85%"></div></div>
+        </div>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Fault tolerance / retries</span><span>core</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:90%"></div></div>
+        </div>
+      </div>
+
+      <div class="skill-group">
+        <h3>Databases & Storage</h3>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>TiKV</span><span>core</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:85%"></div></div>
+        </div>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Couchbase</span><span>core</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:80%"></div></div>
+        </div>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Elasticsearch</span><span>working</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:70%"></div></div>
+        </div>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Redis / SQL</span><span>working</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:68%"></div></div>
+        </div>
+      </div>
+
+      <div class="skill-group">
+        <h3>DevOps & Messaging</h3>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Kafka</span><span>core</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:88%"></div></div>
+        </div>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Docker</span><span>core</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:85%"></div></div>
+        </div>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>Kubernetes</span><span>working</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:72%"></div></div>
+        </div>
+        <div class="skill-bar-row">
+          <div class="skill-bar-label"><span>CI/CD · GitHub Actions</span><span>working</span></div>
+          <div class="skill-bar-track"><div class="skill-bar-fill" style="width:70%"></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ======================= CONTACT ======================= -->
+<section id="contact">
+  <div class="wrap">
+    <div class="eyebrow">contact</div>
+    <h2>contact.toml</h2>
+    <div class="config-block">
+      <div class="config-line"><span class="config-comment"># reach out — open to backend / Rust infra roles</span></div>
+      <div class="config-line"><span class="config-key">name</span><span class="config-eq">=</span><span class="config-val">"Divyesh Kakadiya"</span></div>
+      <div class="config-line"><span class="config-key">email</span><span class="config-eq">=</span><span class="config-val"><a href="mailto:divyeshkakadiya7531@gmail.com">divyeshkakadiya7531@gmail.com</a></span></div>
+      <div class="config-line"><span class="config-key">phone</span><span class="config-eq">=</span><span class="config-val">"+91 7874378168"</span></div>
+      <div class="config-line"><span class="config-key">github</span><span class="config-eq">=</span><span class="config-val"><a href="https://github.com/Divyesh-k" target="_blank" rel="noopener">github.com/Divyesh-k</a></span></div>
+      <div class="config-line"><span class="config-key">linkedin</span><span class="config-eq">=</span><span class="config-val"><a href="https://linkedin.com/in/divyeshjk" target="_blank" rel="noopener">linkedin.com/in/divyeshjk</a></span></div>
+      <div class="config-line"><span class="config-key">location</span><span class="config-eq">=</span><span class="config-val">"Ahmedabad, India"</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>built with rust-flavored CSS, no React, no framework lock-in — edit content directly in index.html</footer>
+
+<script>
+/* ============================================================
+   1. TERMINAL TYPING EFFECT
+   Edit CODE_LINES below to change what types out in the hero.
+   ============================================================ */
+const CODE_LINES = [
+  {t:'kw', s:'async fn '}, {t:'fn', s:'replicate'}, {t:'p', s:'(tx: '}, {t:'type', s:'Stream'}, {t:'p', s:') -> '}, {t:'type', s:'Result'}, {t:'p', s:'<()> {\n'},
+  {t:'p', s:'    '}, {t:'kw', s:'let '}, {t:'p', s:'mut backoff = '}, {t:'type', s:'Backoff'}, {t:'p', s:'::new();\n\n'},
+  {t:'p', s:'    '}, {t:'kw', s:'loop '}, {t:'p', s:'{\n'},
+  {t:'p', s:'        '}, {t:'kw', s:'match '}, {t:'p', s:'tx.send_batch().'}, {t:'kw', s:'await '}, {t:'p', s:'{\n'},
+  {t:'p', s:'            '}, {t:'type', s:'Ok'}, {t:'p', s:'(n) => '}, {t:'com', s:'// 7000+ rec/s\n'},
+  {t:'p', s:'                backoff.reset(),\n'},
+  {t:'p', s:'            '}, {t:'type', s:'Err'}, {t:'p', s:'(e) => '}, {t:'p', s:'backoff.wait().'}, {t:'kw', s:'await'}, {t:'p', s:'?,\n'},
+  {t:'p', s:'        }\n'},
+  {t:'p', s:'    }\n}'}
+];
+
+function renderTypedHTML(charCount){
+  let out = '';
+  let remaining = charCount;
+  for(const seg of CODE_LINES){
+    if(remaining <= 0) break;
+    const take = Math.min(seg.s.length, remaining);
+    const chunk = seg.s.slice(0, take);
+    const cls = seg.t === 'kw' ? 'tk-kw' : seg.t === 'type' ? 'tk-type' : seg.t === 'fn' ? 'tk-fn' : seg.t === 'com' ? 'tk-com' : '';
+    out += cls ? `<span class="${cls}">${chunk}</span>` : chunk;
+    remaining -= take;
+  }
+  return out;
+}
+
+(function typeLoop(){
+  const el = document.getElementById('typer');
+  const fullLen = CODE_LINES.reduce((a,s)=>a+s.s.length,0);
+  let i = 0;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduced){
+    el.innerHTML = renderTypedHTML(fullLen);
+    return;
+  }
+  function tick(){
+    i = Math.min(i+2, fullLen);
+    el.innerHTML = renderTypedHTML(i) + '<span class="cursor"></span>';
+    if(i < fullLen){
+      requestAnimationFrame(()=>setTimeout(tick, 14));
+    } else {
+      setTimeout(()=>{ i = 0; tick(); }, 3200);
+    }
+  }
+  tick();
+})();
+
+/* ============================================================
+   2. AMBIENT NETWORK BACKGROUND
+   Drifting nodes with faint connecting lines — represents
+   distributed services talking to each other.
+   ============================================================ */
+(function netbg(){
+  const canvas = document.getElementById('netbg');
+  const ctx = canvas.getContext('2d');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let w, h, nodes = [];
+  const NODE_COUNT = 38;
+  const LINK_DIST = 150;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = Math.max(window.innerHeight, document.body.scrollHeight);
+  }
+  function init(){
+    resize();
+    nodes = Array.from({length:NODE_COUNT}, ()=>({
+      x: Math.random()*w, y: Math.random()*h,
+      vx: (Math.random()-0.5)*0.15, vy: (Math.random()-0.5)*0.15
+    }));
+  }
+  function step(){
+    ctx.clearRect(0,0,w,h);
+    for(const n of nodes){
+      n.x += n.vx; n.y += n.vy;
+      if(n.x < 0 || n.x > w) n.vx *= -1;
+      if(n.y < 0 || n.y > h) n.vy *= -1;
+    }
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const a = nodes[i], b = nodes[j];
+        const dx = a.x-b.x, dy = a.y-b.y;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if(dist < LINK_DIST){
+          ctx.strokeStyle = `rgba(255,123,28,${0.10 * (1 - dist/LINK_DIST)})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        }
+      }
+    }
+    for(const n of nodes){
+      ctx.fillStyle = 'rgba(45,212,191,0.45)';
+      ctx.beginPath(); ctx.arc(n.x,n.y,1.6,0,Math.PI*2); ctx.fill();
+    }
+    if(!reduced) requestAnimationFrame(step);
+  }
+  init();
+  window.addEventListener('resize', init);
+  if(reduced){ step(); } else { requestAnimationFrame(step); }
+})();
+</script>
+
+</body>
+</html>
